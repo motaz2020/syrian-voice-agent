@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from twilio.twiml.voice_response import VoiceResponse
 from twilio.rest import Client
 import whisper
-from elevenlabs import generate
+from elevenlabs import ElevenLabs
 import json
 import re
 from typing import Dict, List
@@ -21,6 +21,9 @@ app = FastAPI()
 account_sid = os.getenv("TWILIO_ACCOUNT_SID")
 auth_token = os.getenv("TWILIO_AUTH_TOKEN")
 client = Client(account_sid, auth_token)
+
+# ElevenLabs setup
+elevenlabs_client = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
 
 # Whisper model
 model = whisper.load_model("base")
@@ -96,14 +99,16 @@ async def handle_recording(audio_path: str):
         intent = detect_intent(text)
         response_text = generate_response(intent)
 
-        audio_response = generate(
+        audio_response = elevenlabs_client.text_to_speech.convert(
             text=response_text,
-            voice="Adam",  # Free-tier Arabic voice; replace with Syrian-specific for production
-            model="eleven_multilingual_v2"
+            voice="Adam",  # Free-tier Arabic voice
+            model_id="eleven_multilingual_v2"
         )
 
         with open("response.mp3", "wb") as f:
-            f.write(audio_response)
+            for chunk in audio_response:
+                if chunk:
+                    f.write(chunk)
 
         with open("conversation_log.json", "a", encoding="utf-8") as f:
             json.dump({"text": text, "intent": intent, "response": response_text}, f, ensure_ascii=False)
