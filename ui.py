@@ -5,6 +5,7 @@ import whisper
 from elevenlabs import generate
 import soundfile as sf
 import numpy as np
+import os
 
 st.title("Syrian Arabic Voice Agent Testing UI")
 
